@@ -31,20 +31,6 @@ export class Bastion extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ResourceProps) {
     super(scope, id, props);
 
-    // ECS Cluster
-    const cluster = new ecs.Cluster(this, 'BastionCluster', {
-      clusterName: 'Bastion',
-      vpc: props.vpc,
-      enableFargateCapacityProviders: true,
-    });
-
-    // タスク定義
-    const taskDefinition = new ecs.FargateTaskDefinition(this, 'BastionTaskDef', {
-      family: 'Bastion',
-      cpu: 256,
-      memoryLimitMiB: 512,
-    });
-
     // ECR
     const repo = new ecr.Repository(this, 'BastionRepository', {
       repositoryName: 'bastion',
@@ -64,6 +50,20 @@ export class Bastion extends cdk.Stack {
       ],
     });
 
+    // ECS Cluster
+    const cluster = new ecs.Cluster(this, 'BastionCluster', {
+      clusterName: 'Bastion',
+      vpc: props.vpc,
+      enableFargateCapacityProviders: true,
+    });
+
+    // タスク定義
+    const taskDefinition = new ecs.FargateTaskDefinition(this, 'BastionTaskDef', {
+      family: 'Bastion',
+      cpu: 256,
+      memoryLimitMiB: 512,
+    });
+
     // ロググループ
     const logGroup = new logs.LogGroup(this, 'BastionLogGroup', {
       logGroupName: taskDefinition.family,
@@ -80,7 +80,7 @@ export class Bastion extends cdk.Stack {
       }),
     });
 
-    // セキュリティグループの作成
+    // セキュリティグループ
     const securityGroup = new ec2.SecurityGroup(this, 'BastionSecurityGroup', {
       securityGroupName: 'BastionSecurityGroup',
       vpc: props.vpc,
