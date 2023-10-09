@@ -12,7 +12,7 @@
     "cdk:context-clear": "cdk context --clear",
     "lint": "eslint .",
     "prettier": "prettier --write ./**/*.ts",
-    "ncu:check": "ncu",
+    "ncu": "ncu",
     "ncu:update": "ncu -u"
   },
   "devDependencies": {

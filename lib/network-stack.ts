@@ -1,38 +1,28 @@
 import { Construct } from 'constructs';
 
 import * as cdk from 'aws-cdk-lib';
-import * as ec2 from 'aws-cdk-lib/aws-ec2';
+
+import { LibStackProps } from '@/interfaces/context';
+import { Bastion } from '@/lib/resource/bastion';
+import { Vpc } from '@/lib/resource/vpc';
 
 /**
  * VPCネットワーク作成
  */
 export class NetworkStack extends cdk.Stack {
   /**
-   *
+   * VPCネットワーク作成
    * @param {Construct} scope コンストラクト
    * @param {string} id スタック名
    * @param {cdk.StackProps} props 設定
    */
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props: LibStackProps) {
     super(scope, id, props);
 
-    const vpc = new ec2.Vpc(this, 'VPC', {
-      ipAddresses: ec2.IpAddresses.cidr('10.0.0.0/16'),
-      vpcName: 'sample-vpc',
-      maxAzs: 3,
-      natGateways: 1,
-      subnetConfiguration: [
-        {
-          cidrMask: 24,
-          name: 'public-subnet',
-          subnetType: ec2.SubnetType.PUBLIC,
-        },
-        {
-          cidrMask: 24,
-          name: 'private-public',
-          subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
-        },
-      ],
-    });
+    // VPC
+    const vpc = new Vpc(this, id, props);
+
+    // Bastion
+    new Bastion(this, id, { ...props, vpc: vpc.vpc });
   }
 }
