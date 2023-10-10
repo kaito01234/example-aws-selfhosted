@@ -24,7 +24,7 @@ export class Vpc extends cdk.Stack {
     super(scope, id, props);
 
     // VPC
-    this.vpc = new ec2.Vpc(this, 'VPC', {
+    this.vpc = new ec2.Vpc(scope, 'VPC', {
       ipAddresses: ec2.IpAddresses.cidr('10.0.0.0/16'),
       vpcName: 'sample-vpc',
       maxAzs: 3,
@@ -34,6 +34,7 @@ export class Vpc extends cdk.Stack {
           cidrMask: 24,
           name: 'public-subnet',
           subnetType: ec2.SubnetType.PUBLIC,
+          mapPublicIpOnLaunch: false,
         },
         {
           cidrMask: 24,
@@ -49,16 +50,18 @@ export class Vpc extends cdk.Stack {
       gatewayEndpoints: {
         S3: {
           service: ec2.GatewayVpcEndpointAwsService.S3,
-          subnets: [
-            {
-              subnets: this.vpc.privateSubnets,
-            },
-          ],
+          subnets: [{ subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS }],
+        },
+        DYNAMODB: {
+          service: ec2.GatewayVpcEndpointAwsService.DYNAMODB,
+          subnets: [{ subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS }],
         },
       },
       // flowLogs: {
       //   FlowLog: {
-      //     destination: ec2.FlowLogDestination.toS3(s3.Bucket.fromBucketArn(this, 'FlowLogsBucket', 'arn:aws:s3:::')),
+      //     destination: ec2.FlowLogDestination.toS3(
+      //       s3.Bucket.fromBucketArn(scope, 'FlowLogsBucket', 'arn:aws:s3:::')
+      //     ),
       //   },
       // },
     });

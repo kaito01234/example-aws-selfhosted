@@ -5,7 +5,6 @@ import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import * as ecr from 'aws-cdk-lib/aws-ecr';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
@@ -39,60 +38,44 @@ export class SelfHostedRunner extends cdk.Stack {
     super(scope, id, props);
 
     // ECR
-    const repo = new ecr.Repository(this, 'SelfHostedRunnerRepo', {
-      repositoryName: 'github-self-hosted-runner',
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-      autoDeleteImages: true,
-      lifecycleRules: [
-        {
-          description: 'Delete one or more tagged images',
-          tagStatus: ecr.TagStatus.TAGGED,
-          maxImageCount: 1,
-        },
-        {
-          description: 'Delete untagged images',
-          tagStatus: ecr.TagStatus.UNTAGGED,
-          maxImageCount: 0,
-        },
-      ],
-    });
+    const runner = 'myoung34/github-runner:latest';
 
     // セキュリティグループ
-    const securityGroup = new ec2.SecurityGroup(this, 'SelfHostedRunnerSecurityGroup', {
-      securityGroupName: 'SelfHostedRunnerSecurityGroup',
+    const securityGroup = new ec2.SecurityGroup(scope, 'SelfHostedRunnerSecurityGroup', {
+      // securityGroupName: 'SelfHostedRunnerSecurityGroup',
       vpc: props.vpc,
     });
 
     // ロググループ
-    const logGroup = new logs.LogGroup(this, 'SelfHostedRunnerLogGroup', {
+    const logGroup = new logs.LogGroup(scope, 'SelfHostedRunnerLogGroup', {
       logGroupName: 'GitHubSelfHostedRunner',
       retention: logs.RetentionDays.ONE_DAY,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     // GitHub PersonalAccessToken のパラメータ
-    const pat = new ssm.StringParameter(this, 'PersonalAccessTokenParameter', {
+    const pat = new ssm.StringParameter(scope, 'PersonalAccessTokenParameter', {
       parameterName: 'GitHubPersonalAccessToken',
       stringValue: 'your Personal access token.',
     });
 
     // *************** ECS *************** //
     // ECS Cluster
-    new ecs.Cluster(this, 'SelfHostedRunnerCluster', {
+    new ecs.Cluster(scope, 'SelfHostedRunnerCluster', {
       clusterName: 'GitHubSelfHostedRunner',
       vpc: props.vpc,
       enableFargateCapacityProviders: true,
     });
 
     // タスクロール
-    const taskRole = new iam.Role(this, 'SelfHostedRunnerTaskRole', {
-      roleName: 'GitHubSelfHostedRunnerTaskRole',
+    const taskRole = new iam.Role(scope, 'SelfHostedRunnerTaskRole', {
+      // roleName: 'GitHubSelfHostedRunnerTaskRole',
       assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
       managedPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess')],
     });
 
     // タスク定義
-    const taskDefinition = new ecs.FargateTaskDefinition(this, 'SelfHostedRunnerTaskDef', {
+    const taskDefinition = new ecs.FargateTaskDefinition(scope, 'SelfHostedRunnerTaskDef', {
       family: 'GitHubSelfHostedRunner',
       cpu: 256,
       memoryLimitMiB: 512,
@@ -101,33 +84,26 @@ export class SelfHostedRunner extends cdk.Stack {
 
     // コンテナ定義
     taskDefinition.addContainer('SelfHostedRunnerContainer', {
-      image: ecs.ContainerImage.fromEcrRepository(repo),
+      image: ecs.ContainerImage.fromRegistry(runner),
       logging: ecs.LogDrivers.awsLogs({
         logGroup,
         streamPrefix: 'ecs',
       }),
-      environment: {
-        EPHEMERAL: '1',
-      },
       secrets: {
-        ACCESS_TOKEN: ecs.Secret.fromSsmParameter(
-          ssm.StringParameter.fromSecureStringParameterAttributes(this, 'SecureValue', {
-            parameterName: pat.parameterName,
-          })
-        ),
+        ACCESS_TOKEN: ecs.Secret.fromSsmParameter(pat),
       },
     });
 
     // *************** CodeBuild *************** //
     // CodeBuildロール
-    const codebuildRole = new iam.Role(this, 'SelfHostedRunnerCodeBuildRole', {
+    const codebuildRole = new iam.Role(scope, 'SelfHostedRunnerCodeBuildRole', {
       roleName: 'GitHubSelfHostedRunnerCodeBuildRole',
       assumedBy: new iam.ServicePrincipal('codebuild.amazonaws.com'),
       managedPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess')],
     });
 
     // CodeBuild
-    new codebuild.Project(this, 'SelfHostedRunnerCodeBuild', {
+    new codebuild.Project(scope, 'SelfHostedRunnerCodeBuild', {
       projectName: 'GitHubSelfHostedRunner',
       vpc: props.vpc,
       role: codebuildRole,
@@ -147,13 +123,10 @@ export class SelfHostedRunner extends cdk.Stack {
         },
       }),
       environment: {
-        buildImage: codebuild.LinuxBuildImage.fromEcrRepository(repo),
+        buildImage: codebuild.LinuxBuildImage.fromDockerRegistry(runner),
         computeType: codebuild.ComputeType.SMALL,
         privileged: true,
         environmentVariables: {
-          EPHEMERAL: {
-            value: 1,
-          },
           ACCESS_TOKEN: {
             type: codebuild.BuildEnvironmentVariableType.PARAMETER_STORE,
             value: pat.parameterName,
@@ -165,7 +138,7 @@ export class SelfHostedRunner extends cdk.Stack {
 
     // *************** GitHub Webhook *************** //
     // Lambda Function
-    const webhookFunction = new nodejs.NodejsFunction(this, 'WebhookFunction', {
+    const webhookFunction = new nodejs.NodejsFunction(scope, 'WebhookFunction', {
       functionName: 'GitHubSelfHostedRunnerWebhook',
       entry: 'lambda/selfHostedRunner/webhook/index.ts',
       handler: 'handler',
@@ -189,7 +162,7 @@ export class SelfHostedRunner extends cdk.Stack {
     );
 
     // APIGateway
-    const api = new apigateway.LambdaRestApi(this, 'WebhookFunctionAPI', {
+    const api = new apigateway.LambdaRestApi(scope, 'WebhookFunctionAPI', {
       restApiName: 'GitHubSelfHostedRunnerWebhook',
       handler: webhookFunction,
       proxy: false,

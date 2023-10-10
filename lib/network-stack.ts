@@ -4,6 +4,7 @@ import * as cdk from 'aws-cdk-lib';
 
 import { LibStackProps } from '@/interfaces/context';
 import { Bastion } from '@/lib/resource/bastion';
+import { SelfHostedRunner } from '@/lib/resource/self-hosted-runner';
 import { Vpc } from '@/lib/resource/vpc';
 
 /**
@@ -20,9 +21,12 @@ export class NetworkStack extends cdk.Stack {
     super(scope, id, props);
 
     // VPC
-    const vpc = new Vpc(this, id, props);
+    const vpc = new Vpc(this, `${id}-VPC`, props);
 
     // Bastion
-    new Bastion(this, id, { ...props, vpc: vpc.vpc });
+    new Bastion(this, `${id}-Bastion`, { ...props, vpc: vpc.vpc });
+
+    // SelfHostedRunner
+    new SelfHostedRunner(this, `${id}-SelfHostedRunner`, { ...props, vpc: vpc.vpc });
   }
 }
