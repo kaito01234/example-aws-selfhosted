@@ -1,0 +1,9 @@
+version: 0.2
+
+phases:
+  build:
+    commands:
+      - nohup dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2 &
+      - timeout 15s sh -c "until docker info > /dev/null 2>&1; do echo .; sleep 1; done"
+      - cd /actions-runner
+      - /entrypoint.sh ./bin/Runner.Listener run --startuptype service

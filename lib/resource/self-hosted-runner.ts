@@ -13,6 +13,8 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 
 import { LibStackProps } from '@/interfaces/context';
+import { loadDependencies } from '@/util/loadDependencies';
+import { loadYamlToJson } from '@/util/loadYamlToJson';
 
 /**
  * ResourceProps
@@ -109,19 +111,7 @@ export class SelfHostedRunner extends cdk.Stack {
       role: codebuildRole,
       securityGroups: [securityGroup],
       logging: { cloudWatch: { logGroup } },
-      buildSpec: codebuild.BuildSpec.fromObject({
-        version: '0.2',
-        phases: {
-          build: {
-            commands: [
-              'nohup dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2 &',
-              'timeout 15s sh -c "until docker info > /dev/null 2>&1; do echo .; sleep 1; done"',
-              'cd /actions-runner',
-              '/entrypoint.sh ./bin/Runner.Listener run --startuptype service',
-            ],
-          },
-        },
-      }),
+      buildSpec: codebuild.BuildSpec.fromObjectToYaml(loadYamlToJson('./buildspec/startSelfHostedRunner.yml')),
       environment: {
         buildImage: codebuild.LinuxBuildImage.fromDockerRegistry(runner),
         computeType: codebuild.ComputeType.SMALL,
@@ -144,7 +134,7 @@ export class SelfHostedRunner extends cdk.Stack {
       handler: 'handler',
       depsLockFilePath: 'lambda/selfHostedRunner/webhook/package-lock.json',
       bundling: {
-        nodeModules: ['aws-lambda', '@types/aws-lambda', '@aws-sdk/client-codebuild', '@aws-sdk/client-ecs'],
+        nodeModules: loadDependencies('./lambda/selfHostedRunner/webhook/package.json'),
       },
       runtime: lambda.Runtime.NODEJS_18_X,
       timeout: cdk.Duration.seconds(900),
