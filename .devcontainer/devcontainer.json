@@ -1,5 +1,5 @@
 {
-  "name": "AWS CDK Study",
+  "name": "GitHub Self-hosted Runner Sample",
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
