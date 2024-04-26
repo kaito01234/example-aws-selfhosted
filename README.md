@@ -4,14 +4,14 @@
 
 ## Setup
 
-- `npx cdk deploy SelfHostedRunnerStack`: VPCとランナー作成
-- `npx cdk deploy SelfHostedRunnerStack -c gitHubWebhookSecret=XXXXXXXXXX`: GitHub Webhooksのシークレットトークンを設定してランナー作成
+- `npx cdk deploy SelfHostedRunnerStack`: Create VPC and hosted-runner
+- `npx cdk deploy SelfHostedRunnerStack -c gitHubWebhookSecret=XXXXXXXXXX`: Validate webhook with secret
 
 ## WebHooksの設定
 
 https://qiita.com/bigmac/items/63f1723db2c718307474#webhooksの設定
 
-## モジュールのアップデート
+## Update modules
 
-- `npm run ncu:update`: マイナーバージョンアップデート
-- `npm run ncu:update:latest`: メジャーバージョンアップデート
+- `npm run ncu:update`: Minor version update
+- `npm run ncu:update:latest`: Major version update
