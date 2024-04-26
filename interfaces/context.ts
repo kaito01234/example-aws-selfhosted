@@ -18,4 +18,8 @@ export interface LibStackProps extends cdk.StackProps {
    * @property {Context} context context
    */
   context: Context;
+  /**
+   * @property {string} gitHubWebhookSecret gitHubWebhookSecret
+   */
+  gitHubWebhookSecret: string;
 }

@@ -39,12 +39,10 @@ export class SelfHostedRunner extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ResourceProps) {
     super(scope, id, props);
 
-    // ECR
     const runner = 'myoung34/github-runner:latest';
 
     // セキュリティグループ
     const securityGroup = new ec2.SecurityGroup(scope, 'SelfHostedRunnerSecurityGroup', {
-      // securityGroupName: 'SelfHostedRunnerSecurityGroup',
       vpc: props.vpc,
     });
 
@@ -71,7 +69,6 @@ export class SelfHostedRunner extends cdk.Stack {
 
     // タスクロール
     const taskRole = new iam.Role(scope, 'SelfHostedRunnerTaskRole', {
-      // roleName: 'GitHubSelfHostedRunnerTaskRole',
       assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
       managedPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess')],
     });
@@ -99,7 +96,6 @@ export class SelfHostedRunner extends cdk.Stack {
     // *************** CodeBuild *************** //
     // CodeBuildロール
     const codebuildRole = new iam.Role(scope, 'SelfHostedRunnerCodeBuildRole', {
-      roleName: 'GitHubSelfHostedRunnerCodeBuildRole',
       assumedBy: new iam.ServicePrincipal('codebuild.amazonaws.com'),
       managedPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess')],
     });
@@ -136,10 +132,10 @@ export class SelfHostedRunner extends cdk.Stack {
       bundling: {
         nodeModules: loadDependencies('./lambda/selfHostedRunner/webhook/package.json'),
       },
-      runtime: lambda.Runtime.NODEJS_18_X,
-      timeout: cdk.Duration.seconds(900),
+      runtime: lambda.Runtime.NODEJS_20_X,
+      timeout: cdk.Duration.seconds(30),
       environment: {
-        GitHubWebhookSecret: 'Replace here.',
+        GitHubWebhookSecret: props.gitHubWebhookSecret,
         FargateSubnet: props.vpc.privateSubnets.map((subnet) => subnet.subnetId).join(','),
         FargateSecurityGroup: securityGroup.securityGroupId,
       },

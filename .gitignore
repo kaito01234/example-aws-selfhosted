@@ -8,3 +8,4 @@ node_modules
 cdk.out
 
 !.eslintrc.js
+cdk.context.json

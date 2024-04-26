@@ -12,18 +12,20 @@ import { startRunner } from './start-runnner';
  */
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   // 認証
-  if (!isValidSignature(event.body, event.headers)) {
-    const message = 'signature is invalid';
-    console.error(message);
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message,
-      }),
-    };
+  if (process.env.GitHubWebhookSecret !== '') {
+    if (!isValidSignature(event.body, event.headers)) {
+      const message = 'signature is invalid';
+      console.error(message);
+      return {
+        statusCode: 500,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message,
+        }),
+      };
+    }
+    console.log('signature is valid');
   }
-  console.log('signature is valid');
 
   // labelsとrun_idを取得
   const body = JSON.parse(event.body ?? '{}');

@@ -3,11 +3,12 @@ import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
 
 import { Context } from '@/interfaces/context';
-import { NetworkStack } from '@/lib/network-stack';
+import { SelfHostedRunnerStack } from '@/lib/self-hosted-runner-stack';
 
 const app = new cdk.App();
 
 // コンテキスト取得
+const gitHubWebhookSecret: string = process.env.GITHUB_WEBHOOK_SECRET ?? '';
 const contextname: string = process.env.CONTEXT ?? 'development';
 const context: Context = app.node.tryGetContext(contextname);
 
@@ -16,7 +17,8 @@ const env = {
   region: 'ap-northeast-1',
 };
 
-new NetworkStack(app, 'NetworkStack', {
+new SelfHostedRunnerStack(app, 'SelfHostedRunnerStack', {
   env,
   context,
+  gitHubWebhookSecret,
 });
