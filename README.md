@@ -10,7 +10,7 @@ https://qiita.com/bigmac/items/63f1723db2c718307474
 - `npx cdk deploy SelfHostedRunnerStack`: Create VPC and hosted-runner
 - `npx cdk deploy SelfHostedRunnerStack -c gitHubWebhookSecret=XXXXXXXXXX`: Validate webhook with secret
 
-## Settiong webHooks
+## Configure webHooks
 
 https://qiita.com/bigmac/items/63f1723db2c718307474#webhooksの設定
 
